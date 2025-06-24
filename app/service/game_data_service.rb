@@ -1,19 +1,53 @@
 class GameDataService
 
-  def call
-    get_data
-  end
+  def get_one
+    data = get_data
+    data_item = get_init_finish_game(data)
 
-  def get_info_for_game()
-    Struct.new(:game_number, :list_causa, :kill_per_cause, :kill_per_game, :kill_per_world)
-  end
+    info = []
+    info_kill = Struct.new(:game_number, :list_motivated, :kill_per_cause, :kill_per_game, :kill_per_world)
 
+    data_item.each do |item|
+      if item[:game_play].empty?
+        info << info_kill.new(
+          game_number: item[:number],
+          list_motivated: 0,
+          kill_per_cause: 0,
+          kill_per_game: 0,
+          kill_per_world: 0
+        )
+      else
+         info << info_kill.new(
+          game_number: item[:number],
+          list_motivated: get_list_motivated(item[:game_play]),
+          kill_per_cause: get_kill_per_cause(item[:game_play]),
+          kill_per_game: item[:game_play].count,
+          kill_per_world: get_kill_per_world(item[:game_play])
+        )
+      end
+    end
+     info
+  end
+  
+  
   private
+
+  def get_list_motivated(game_play)
+    game_play_values = game_play.map(&:value).map{|v| v.split(" ")[-1]}.uniq
+  end
+
+  def get_kill_per_cause(game_play)
+    game_play.map(&:value).map{|v| v.split(" ")[-1]}.tally
+  end
+
+
+  def get_kill_per_world(game_play)
+     game_play.map(&:value).map{ |v| v.split(" ").include?("<world>" )}.count(true)
+  end
+
   def get_data
     data = File.read(Rails.root + "app/service/game.log")
     data_item = get_data_item(data.split("\n"))
-
-    get_init_finish_game(data_item)
   end
 
   def not_important_name
@@ -32,6 +66,41 @@ class GameDataService
       "0:00",
       "say:"
     ]
+  end
+
+  def list_death
+   [ 
+    "MOD_UNKNOWN",
+    "MOD_SHOTGUN",
+    "MOD_GAUNTLET",
+    "MOD_MACHINEGUN",
+    "MOD_GRENADE",
+    "MOD_GRENADE_SPLASH",
+    "MOD_ROCKET",
+    "MOD_ROCKET_SPLASH",
+    "MOD_PLASMA",
+    "MOD_PLASMA_SPLASH",
+    "MOD_RAILGUN",
+    "MOD_LIGHTNING",
+    "MOD_BFG",
+    "MOD_BFG_SPLASH",
+    "MOD_WATER",
+    "MOD_SLIME",
+    "MOD_LAVA",
+    "MOD_CRUSH",
+    "MOD_TELEFRAG",
+    "MOD_FALLING",
+    "MOD_SUICIDE",
+    "MOD_TARGET_LASER",
+    "MOD_TRIGGER_HURT",
+    "MISSIONPACK",
+    "MOD_NAIL",
+    "MOD_CHAINGUN",
+    "MOD_PROXIMITY_MINE",
+    "MOD_KAMIKAZE",
+    "MOD_JUICED",
+    "MOD_GRAP",
+   ]
   end
 
   def get_data_item(data)
@@ -65,22 +134,19 @@ class GameDataService
     item_value.each do |item|
       if item[:title] == "InitGame:" && !game_init
         game_init = true
-      elsif item[:title] != "InitGame:" && item[:title] != "ShutdownGame:" && game_init && item[:title] == "Kill:"
+      elsif item[:title] != "InitGame:" && item[:title] != "ShutdownGame:" && game_init
         game_play_item << item
       elsif item[:title] == "ShutdownGame:"
-        debugger
         game_init = false
-
         game = { number: game_number, game_play: game_play_item }
         all_games << game
 
         game_play_item = []
         game_number += 1
       end
-      debugger
-
-      all_games
     end
+
+    all_games
   end
 end
 

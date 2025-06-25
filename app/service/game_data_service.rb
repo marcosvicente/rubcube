@@ -44,8 +44,6 @@ class GameDataService
           scored: nil
         )
       else
-           debugger
-
          info_value << info_kill.new(
           game_number: item[:number],
           scored: player_scored(item[:game_play])
@@ -54,7 +52,11 @@ class GameDataService
     end
     info_value
   end
-
+ def get_three(game_number)
+    data_item = get_one
+    return data_item if game_number.nil? || game_number == "all"
+    data_item.map{|data| data if data[:game_number] == game_number.to_i }.compact
+  end
 
   private
 

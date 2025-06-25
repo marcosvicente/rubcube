@@ -9,4 +9,5 @@ Rails.application.routes.draw do
   # root "posts#index"
   get "/history/one", to: "history#one"
   get "/history/two", to: "history#two"
+  get "/history/three/:game_number", to: "history#three"
 end

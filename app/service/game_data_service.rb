@@ -29,9 +29,70 @@ class GameDataService
      info
   end
   
-  
+  def get_two
+    data = get_data
+    data_item = get_init_finish_game(data)
+
+    info_value = []
+    info_kill = Struct.new(:game_number, :scored)
+
+    data_item.each do |item|
+      if item[:game_play].empty?
+
+        info_value << info_kill.new(
+          game_number: item[:number],
+          scored: nil
+        )
+      else
+           debugger
+
+         info_value << info_kill.new(
+          game_number: item[:number],
+          scored: player_scored(item[:game_play])
+        )
+      end
+    end
+    info_value
+  end
+
+
   private
 
+  def player_scored(game_play)
+    all_player_per_game = []
+    player = Struct.new(:name, :scored)
+    aux = game_play.map(&:value).map{ |a| a.split(": ")[1] }
+    aux.each do |item|
+      player_name =  item.split("killed")[0].strip
+
+      player_death = item.split("killed")[1].split(" by ")[0].strip
+      if all_player_per_game.empty?
+        all_player_per_game << player.new(name: player_name, scored: 0)
+        all_player_per_game << player.new(name: player_death, scored: 0)
+      else
+        unless all_player_per_game.map(&:name).include?(player_name)
+          all_player_per_game << player.new(name: player_name, scored: 0)
+        end
+        
+        unless all_player_per_game.map(&:name).include?(player_death)
+          all_player_per_game << player.new(name: player_death, scored: 0)
+        end
+
+        all_player_per_game.each do |item|
+          if player_name == player_death
+            next
+          elsif item.name == player_name
+            item.scored += 1
+          elsif item.name == player_death
+            item.scored -= 1
+          end
+        end
+      end
+    end
+    all_player_per_game = all_player_per_game.map{|a| a if a[:name] != "<world>" }.compact
+    all_player_per_game.sort_by {|a| a[:scored]}.reverse!
+  end
+  
   def get_list_motivated(game_play)
     game_play_values = game_play.map(&:value).map{|v| v.split(" ")[-1]}.uniq
   end
